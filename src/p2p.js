@@ -1,11 +1,15 @@
 const WebSockets = require("ws");
 Blockchain = require("./blockchain");
 
-const { getLastBlock } = Blockchain;
+const {
+  getNewestBlock,
+  isBlockStructureValid,
+  addBlockToChain,
+  replaceChain,
+  getBlockchain
+} = Blockchain;
 
 const sockets = [];
-
-const getSockets = () => sockets;
 
 //  Messages Types
 const GET_LATEST = "GET_LATEST";
@@ -34,6 +38,8 @@ const blockchainResponse = data => {
   };
 };
 
+const getSockets = () => sockets;
+
 const startP2PServer = server => {
   const wsServer = new WebSockets.Server({ server });
   wsServer.on("connection", ws => {
@@ -60,6 +66,7 @@ const parseData = data => {
 
 const handleSocketMessages = ws => {
   ws.on("message", data => {
+    console.log("handleSocketMessages, data : " + data);
     const message = parseData(data);
     if (message === null) {
       return;
@@ -67,13 +74,55 @@ const handleSocketMessages = ws => {
     console.log(message);
     switch (message.type) {
       case GET_LATEST:
-        sendMessage(ws, getLastBlock());
+        sendMessage(ws, responseLatest());
+        break;
+      case GET_ALL:
+        sendMessage(ws, responseAll());
+        break;
+      case BLOCKCHAIN_RESPONSE:
+        const receivedBlocks = message.data;
+        if (receivedBlocks === null) {
+          break;
+        }
+        handleBlockchainResponse(receivedBlocks);
         break;
     }
   });
 };
 
+const handleBlockchainResponse = receivedBlocks => {
+  if (receivedBlocks.length === 0) {
+    console.log("Received blocks have a length of 0");
+    return;
+  }
+  console.log("receivedBlocks : " + receivedBlocks);
+
+  const latestBlockReceived = receivedBlocks[receivedBlocks.length - 1];
+  if (!isBlockStructureValid(latestBlockReceived)) {
+    console.log("The block structure of the block received is not valid");
+    return;
+  }
+  const newestBlock = getNewestBlock();
+  if (latestBlockReceived.index > newestBlock.index) {
+    if (newestBlock.hash === latestBlockReceived.previousHash) {
+      addBlockToChain(latestBlockReceived);
+    } else if (receivedBlocks.length === 1) {
+      //  to do, get all the blocks, we are waaaay behind
+      sendMessageToAll(getAll());
+    } else {
+      replaceChain(receivedBlocks);
+    }
+  }
+};
+
 const sendMessage = (ws, message) => ws.send(JSON.stringify(message));
+
+const sendMessageToAll = message =>
+  sockets.forEach(ws => sendMessage(ws, message));
+
+const responseLatest = () => blockchainResponse([getNewestBlock()]);
+
+const responseAll = () => blockchainResponse(getBlockchain());
 
 const handleSocketError = ws => {
   const closeSocketConnection = ws => {
