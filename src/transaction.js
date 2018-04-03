@@ -47,7 +47,7 @@ const getTxId = tx => {
 
 const findUTxOut = (uTxOutId, txOutIndex, uTxOutList) => {
   return uTxOutList.find(
-    uTxOut => uTxOut.txOutId === txOutId && uTxOut.txOutIndex === txOutIndex
+    uTxO => uTxO.txOutId === txOutId && uTxO.txOutIndex === txOutIndex
   );
 };
 
@@ -145,6 +145,51 @@ const isTxStructureValid = tx => {
     !tx.txOut.map(isTxOutStructureValid).reduce((a, b) => a && b, true)
   ) {
     console.log("The structure of one of the txOut is not valid");
+    return false;
+  } else {
+    return true;
+  }
+};
+
+const validateTxIn = (txIn, tx, uTxOutList) => {
+  const wantedTxOut = uTxOutList.find(
+    uTxO => uTxO.txOutId === txIn.txOutId && uTxO.txOutIndex === txIn.txOutIndex
+  );
+  if (wantedTxOut === null) {
+    return false;
+  } else {
+    const address = wantedTxOut.address;
+    const key = ec.keyFromPublic(address, "hex");
+
+    return key.verify(tx.id, txIn.signature);
+  }
+};
+
+const getAmountInTxIn = (txIn, uTxOutList) =>
+  findUTxOut(txIn.txOutId, txIn.txOutIndex, uTxOutList).amount;
+
+const validateTx = (tx, uTxOutList) => {
+  if (getTxId(tx) !== tx.id) {
+    return false;
+  }
+
+  const hasValidTxIns = tx.txIns.map(txIn =>
+    validateTxIn(txIn, tx, uTxOutList)
+  );
+
+  if (!hasValidTxIns) {
+    return false;
+  }
+
+  const amountInTxIns = tx.txIns
+    .map(txIn => getAmountInTxIn(txIn, uTxOutList))
+    .reduce((a, b) => a + b, 0);
+
+  const amountInTxOuts = tx.txOuts
+    .map(txOut => txOut.amount)
+    .reduce((a, b) => a + b, 0);
+
+  if (amountInTxIns !== amountInTxOuts) {
     return false;
   } else {
     return true;
