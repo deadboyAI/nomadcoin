@@ -14,8 +14,8 @@ class TxOut {
 }
 
 class TxIn {
-  // uTxOutId
-  // uTxOutIndex
+  // txOutId
+  // txOutIndex
   // Signature
 }
 
@@ -53,18 +53,28 @@ const findUTxOut = (uTxOutId, txOutIndex, uTxOutList) => {
   );
 };
 
-const signTxIn = (tx, txInIndex, privateKey, uTxOut) => {
+const signTxIn = (tx, txInIndex, privateKey, uTxOutList) => {
   const txIn = tx.txIns[txInIndex];
   const dataToSign = tx.id;
-
-  const referencedUTxOut = findUTxOut(txIn.txOutId, tx.txOutIndex, uTxOuts);
+  const referencedUTxOut = findUTxOut(txIn.txOutId, tx.txOutIndex, uTxOutList);
   if (referencedUTxOut === null) {
     return;
   }
 
+  const referencedAddress = referencedUTxOut.address;
+  if(getPublicKey(privateKey) !== referencedAddress) {
+    return false;
+  }
   const key = ec.keyFromPrivate(privateKey, "hex");
   const signature = utils.toHexString(key.sign(dataToSign).toDER());
   return signature;
+};
+
+const getPublicKey = privateKey => {
+  return ec
+    .keyFromPrivate(privateKey, "hex")
+    .getPublic()
+    .encode("hex");
 };
 
 const updateUTxOuts = (newTxs, uTxOutList) => {
@@ -171,7 +181,7 @@ const getAmountInTxIn = (txIn, uTxOutList) =>
   findUTxOut(txIn.txOutId, txIn.txOutIndex, uTxOutList).amount;
 
 const validateTx = (tx, uTxOutList) => {
-  if(!isTxStructureValid(tx)) {
+  if (!isTxStructureValid(tx)) {
     return false;
   }
 
@@ -205,15 +215,24 @@ const validateTx = (tx, uTxOutList) => {
 const validateCoinbaseTx = (tx, blockIndex) => {
   if (getTxId(tx) !== tx.id) {
     return false;
-  } else if(tx.txIns.length !== 1) {
+  } else if (tx.txIns.length !== 1) {
     return false;
-  } else if(tx.txIns[0].txOutIndex !== blockIndex) {
+  } else if (tx.txIns[0].txOutIndex !== blockIndex) {
     return false;
-  } else if(tx.txOuts.length !== 1) {
+  } else if (tx.txOuts.length !== 1) {
     return false;
-  } else if(tx.txOuts[0].amount !== COINBASE_AMOUNT) {
+  } else if (tx.txOuts[0].amount !== COINBASE_AMOUNT) {
     return false;
   } else {
     return true;
   }
 };
+
+module.exports = {
+  getPublicKey,
+  getTxId,
+  signTxIn,
+  TxIn,
+  Transaction,
+  TxOut
+}
