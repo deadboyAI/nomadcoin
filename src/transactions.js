@@ -42,7 +42,7 @@ const getTxId = tx => {
   const txOutContent = tx.txOuts
     .map(txOut => txOut.address + txOut.amount)
     .reduce((a, b) => a + b, "");
-  return CtyproJS.SHA256(txInContent + txOutContent).toString();
+  return CryptoJS.SHA256(txInContent + txOutContent).toString();
 };
 
 const findUTxOut = (uTxOutId, txOutIndex, uTxOutList) => {
@@ -226,11 +226,23 @@ const validateCoinbaseTx = (tx, blockIndex) => {
   }
 };
 
+const createCoinbaseTx = (address, blockIndex) => {
+  const tx = new Transaction();
+  const txIn = new TxIn();
+  txIn.signature = ""
+  txIn.txOutId = blockIndex;
+  tx.txIns = [txIn];
+  tx.txOuts = [new TxOut(address, COINBASE_AMOUNT)];
+  tx.id = getTxId(tx);
+  return tx;
+}
+
 module.exports = {
   getPublicKey,
   getTxId,
   signTxIn,
   TxIn,
   Transaction,
-  TxOut
+  TxOut,
+  createCoinbaseTx
 }
