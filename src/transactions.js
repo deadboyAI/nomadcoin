@@ -1,6 +1,7 @@
-const CryptoJS = require("crypto-js");
-elliptic = require("elliptic");
-utils = require("./utils");
+const CryptoJS = require("crypto-js"),
+  elliptic = require("elliptic"),
+  _ = require("lodash"),
+  utils = require("./utils");
 
 const ec = new elliptic.ec("secp256k1");
 
@@ -25,7 +26,7 @@ class Transaction {
   // txOuts[]
 }
 
-class UTxout {
+class UTxOut {
   constructor(uTxOutId, txOutIndex, address, amount) {
     this.uTxOutId = uTxOutId;
     this.txOutIndex = txOutIndex;
@@ -47,7 +48,7 @@ const getTxId = tx => {
 
 const findUTxOut = (uTxOutId, txOutIndex, uTxOutList) => {
   return uTxOutList.find(
-    uTxO => uTxO.txOutId === txOutId && uTxO.txOutIndex === txOutIndex
+    uTxO => uTxO.txOutId === uTxOutId && uTxO.txOutIndex === txOutIndex
   );
 };
 
@@ -60,7 +61,7 @@ const signTxIn = (tx, txInIndex, privateKey, uTxOutList) => {
   }
 
   const referencedAddress = referencedUTxOut.address;
-  if(getPublicKey(privateKey) !== referencedAddress) {
+  if (getPublicKey(privateKey) !== referencedAddress) {
     return false;
   }
   const key = ec.keyFromPrivate(privateKey, "hex");
@@ -77,21 +78,21 @@ const getPublicKey = privateKey => {
 
 const updateUTxOuts = (newTxs, uTxOutList) => {
   const newUTxOuts = newTxs
-    .map(tx => {
-      tx.txOuts.map((txOut, index) => {
-        new UTXOut(tx.id, index, txOut.address, txOut.amount);
-      });
-    })
+    .map(tx =>
+      tx.txOuts.map(
+        (txOut, index) => new UTxOut(tx.id, index, txOut.address, txOut.amount)
+      )
+    )
     .reduce((a, b) => a.concat(b), []);
 
   const spentTxOuts = newTxs
     .map(tx => tx.txIns)
     .reduce((a, b) => a.concat(b), [])
-    .map(txIn => new UTxout(txIn.txOutId, txIn.txOutIndex, "", 0));
+    .map(txIn => new UTxOut(txIn.txOutId, txIn.txOutIndex, "", 0));
 
   const resultingUTxOuts = uTxOutList
-    .finter(uTx0 => !findUTxOut(uTx0.txOutId, uTx0.uTxOutIndex, spentTxOuts))
-    .concat(newTxOuts);
+    .filter(uTx0 => !findUTxOut(uTx0.txOutId, uTx0.uTxOutIndex, spentTxOuts))
+    .concat(newUTxOuts);
 
   return resultingUTxOuts;
 };
@@ -229,13 +230,60 @@ const validateCoinbaseTx = (tx, blockIndex) => {
 const createCoinbaseTx = (address, blockIndex) => {
   const tx = new Transaction();
   const txIn = new TxIn();
-  txIn.signature = ""
-  txIn.txOutId = blockIndex;
+  txIn.signature = "";
+  txIn.txOutId = "";
+  txIn.txOutIndex = blockIndex;
   tx.txIns = [txIn];
   tx.txOuts = [new TxOut(address, COINBASE_AMOUNT)];
   tx.id = getTxId(tx);
   return tx;
-}
+};
+
+const hasDuplicates = txIns => {
+  const groups = _.countBy(txIns, txIn => txIn.txOutId + txIn.txOutIndex);
+
+  return _(groups)
+    .map(value => {
+      if (value > 1) {
+        console.log("Found a duplicated txIn");
+        return true;
+      } else {
+        return false;
+      }
+    })
+    .includes(true);
+};
+
+const validateBlockTxs = (txs, uTxOutList, blockIndex) => {
+  const coinbaseTx = txs[0];
+  if (!validateCoinbaseTx(coinbaseTx, blockIndex)) {
+    console.log("Coinbase Tx is invalid");
+  }
+
+  const txIns = _(txs)
+    .map(tx => tx.txIns)
+    .flatten()
+    .value();
+
+  if (hasDuplicates(txIns)) {
+    console.log("Found duplicated txIns");
+    return false;
+  }
+
+  const nonCoinbaseTxs = txs.slice(1);
+
+  return nonCoinbaseTxs
+    .map(tx => validateTx(tx, uTxOutList))
+    .reduce((a, b) => a + b, true);
+};
+
+const processTxs = (txs, uTxOutList, blockIndex) => {
+  if (!validateBlockTxs(txs, uTxOutList, blockIndex)) {
+    return null;
+  }
+
+  return updateUTxOuts(txs, uTxOutList);
+};
 
 module.exports = {
   getPublicKey,
@@ -244,5 +292,6 @@ module.exports = {
   TxIn,
   Transaction,
   TxOut,
-  createCoinbaseTx
-}
+  createCoinbaseTx,
+  processTxs
+};

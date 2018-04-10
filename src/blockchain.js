@@ -4,7 +4,7 @@ const CryptoJS = require("crypto-js"),
   hexToBinary = require("hex-to-binary");
 
 const { getBalance, getPublicFromWallet } = Wallet;
-const { createCoinbaseTx } = Transactions;
+const { createCoinbaseTx, processTxs } = Transactions;
 
 const BLOCK_GENERATION_INTERVAL = 10;
 const DIFFICULTY_ADJUSTMENT_INTERVAL = 10;
@@ -53,7 +53,7 @@ const createNewBlock = () => {
   );
   const blockData = [coinbaseTx];
   return createNewRawBlock(blockData);
-}
+};
 
 const createNewRawBlock = data => {
   console.log(data);
@@ -225,17 +225,27 @@ const replaceChain = candidateChain => {
 
 const addBlockToChain = candidateBlock => {
   if (isBlockValid(candidateBlock, getNewestBlock())) {
-    console.log("valid block");
-    blockchain.push(candidateBlock);
-    return true;
+    const processedTxs = processTxs(
+      candidateBlock.data,
+      uTxOuts,
+      candidateBlock.index
+    );
+    if (processedTxs === null) {
+      console.log("Couldn't process txs");
+      return false;
+    } else {
+      console.log("valid block");
+      blockchain.push(candidateBlock);
+      uTxOuts = processedTxs;
+      return true;
+    }
   } else {
     console.log("invalid block");
     return false;
   }
 };
 
-const getAccountBalance = () =>
-  getBalance(getPublicFromWallet(), uTxOuts);
+const getAccountBalance = () => getBalance(getPublicFromWallet(), uTxOuts);
 
 module.exports = {
   getNewestBlock,
