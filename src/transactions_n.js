@@ -1,3 +1,4 @@
+//nomad
 const CryptoJS = require("crypto-js"),
   elliptic = require("elliptic"),
   _ = require("lodash"),
@@ -65,7 +66,6 @@ const signTxIn = (tx, txInIndex, privateKey, uTxOutList) => {
     throw Error("Couldn't find the referenced uTxOut, not signing");
     return;
   }
-
   const referencedAddress = referencedUTxOut.address;
   if (getPublicKey(privateKey) !== referencedAddress) {
     return false;
@@ -97,11 +97,18 @@ const updateUTxOuts = (newTxs, uTxOutList) => {
     .map(txIn => new UTxOut(txIn.txOutId, txIn.txOutIndex, "", 0));
 
   const resultingUTxOuts = uTxOutList
-    .filter(uTx0 => !findUTxOut(uTx0.txOutId, uTx0.uTxOutIndex, spentTxOuts))
+    .filter(uTxO => !findUTxOut(uTxO.txOutId, uTxO.txOutIndex, spentTxOuts))
     .concat(newUTxOuts);
-
   return resultingUTxOuts;
 };
+
+/*
+[(), B, C, D, E, F, G, ZZ, MM]
+
+
+A(40) ---> TRANSACTION  ----> ZZ(10)
+                        ----> MM(30)
+*/
 
 const isTxInStructureValid = txIn => {
   if (txIn === null) {
@@ -188,7 +195,6 @@ const validateTxIn = (txIn, tx, uTxOutList) => {
   } else {
     const address = wantedTxOut.address;
     const key = ec.keyFromPublic(address, "hex");
-
     return key.verify(tx.id, txIn.signature);
   }
 };
@@ -315,7 +321,6 @@ const processTxs = (txs, uTxOutList, blockIndex) => {
   if (!validateBlockTxs(txs, uTxOutList, blockIndex)) {
     return null;
   }
-
   return updateUTxOuts(txs, uTxOutList);
 };
 

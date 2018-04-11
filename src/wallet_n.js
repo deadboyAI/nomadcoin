@@ -12,6 +12,7 @@ const {
   Transaction,
   TxOut
 } = Transactions;
+
 const ec = new elliptic.ec("secp256k1");
 
 const privateKeyLocation = path.join(__dirname, "privateKey");
@@ -54,13 +55,13 @@ const findAmountInUTxOuts = (amountNeeded, myUTxOuts) => {
   const includedUTxOuts = [];
   for (const myUTxOut of myUTxOuts) {
     includedUTxOuts.push(myUTxOut);
-    currentAmount = currentAmount + myUTxOut.amount;
+    currentAmount = currentAmount = myUTxOut.amount;
     if (currentAmount >= amountNeeded) {
       const leftOverAmount = currentAmount - amountNeeded;
       return { includedUTxOuts, leftOverAmount };
     }
   }
-  throw Error("Not enough funds");
+  throw Error("Not enough founds");
   return false;
 };
 
@@ -103,7 +104,7 @@ const createTx = (receiverAddress, amount, privateKey, uTxOutList) => {
     txIn.signature = signTxIn(tx, index, privateKey, uTxOutList);
     return txIn;
   });
-  
+
   return tx;
 };
 
