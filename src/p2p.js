@@ -1,5 +1,5 @@
-const WebSockets = require("ws");
-Blockchain = require("./blockchain");
+const WebSockets = require("ws"),
+  Blockchain = require("./blockchain");
 
 const {
   getNewestBlock,
@@ -105,10 +105,9 @@ const handleBlockchainResponse = receivedBlocks => {
   const newestBlock = getNewestBlock();
   if (latestBlockReceived.index > newestBlock.index) {
     if (newestBlock.hash === latestBlockReceived.previousHash) {
-      if(addBlockToChain(latestBlockReceived)) {
+      if (addBlockToChain(latestBlockReceived)) {
         broadcastNewBlock(latestBlockReceived);
       }
-      
     } else if (receivedBlocks.length === 1) {
       //  to do, get all the blocks, we are waaaay behind
       sendMessageToAll(getAll());

@@ -1,5 +1,5 @@
 Arguments: 
-  /usr/local/bin/node /usr/local/bin/yarn build
+  /usr/local/bin/node /usr/local/bin/yarn de
 
 PATH: 
   /Library/Frameworks/Python.framework/Versions/3.6/bin:/Library/Frameworks/Python.framework/Versions/3.5/bin:/Library/Frameworks/Python.framework/Versions/3.5/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/Library/Frameworks/Python.framework/Versions/3.6/bin:/Library/Frameworks/Python.framework/Versions/3.5/bin:/Users/knulps/android-sdks/sdk/platform-tools:/Users/knulps/android-sdks/sdk/platform-tools
@@ -29,6 +29,7 @@ npm manifest:
       "elliptic": "^6.4.0",
       "express": "^4.16.3",
       "hex-to-binary": "^1.0.1",
+      "lodash": "^4.17.5",
       "morgan": "^1.9.0",
       "nodemon": "^1.17.2",
       "ws": "^5.0.0"
@@ -1182,6 +1183,10 @@ Lockfile:
     dependencies:
       package-json "^4.0.0"
   
+  lodash@^4.17.5:
+    version "4.17.5"
+    resolved "https://registry.yarnpkg.com/lodash/-/lodash-4.17.5.tgz#99a92d65c0272debe8c96b6057bc8fbfa3bed511"
+  
   lowercase-keys@^1.0.0:
     version "1.0.0"
     resolved "https://registry.yarnpkg.com/lowercase-keys/-/lowercase-keys-1.0.0.tgz#4e3366b39e7f5457e35f1324bdf6f88d0bfc7306"
@@ -2146,7 +2151,7 @@ Lockfile:
     resolved "https://registry.yarnpkg.com/yallist/-/yallist-2.1.2.tgz#1c11f9218f076089a47dd512f93c6699a6a81d52"
 
 Trace: 
-  Error: Command "build" not found.
+  Error: Command "de" not found. Did you mean "dev"?
       at new MessageError (/usr/local/lib/node_modules/yarn/lib/cli.js:186:110)
       at /usr/local/lib/node_modules/yarn/lib/cli.js:87307:17
       at Generator.next (<anonymous>)

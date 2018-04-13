@@ -14,7 +14,7 @@ const {
 
 const { createCoinbaseTx, processTxs } = Transactions;
 
-const { addToMempool, getMempool } = Mempool;
+const { addToMempool, getMempool, updateMempool } = Mempool;
 
 const BLOCK_GENERATION_INTERVAL = 10;
 const DIFFICULTY_ADJUSTMENT_INTERVAL = 10;
@@ -83,7 +83,7 @@ const createNewRawBlock = data => {
   return newBlock;
 };
 
-const findDifficulty = blockchain => {
+const findDifficulty = () => {
   const newestBlock = getNewestBlock();
   if (
     newestBlock.index % DIFFICULTY_ADJUSTMENT_INTERVAL === 0 &&
@@ -122,7 +122,7 @@ const findBlock = (index, previousHash, timestamp, data, difficulty) => {
       difficulty,
       nonce
     );
-    //to do: check amount of zeros (hashmatchesDifficulty)
+    //check amount of zeros (hashmatchesDifficulty)
     if (hashMatchesDifficulty(hash, difficulty)) {
       return new Block(
         index,
@@ -244,9 +244,9 @@ const addBlockToChain = candidateBlock => {
       console.log("Couldn't process txs");
       return false;
     } else {
-      console.log("valid block");
       blockchain.push(candidateBlock);
       uTxOuts = processedTxs;
+      updateMempool(uTxOuts);
       return true;
     }
   } else {
@@ -260,8 +260,14 @@ const getUTxOutList = () => _.cloneDeep(uTxOuts);
 const getAccountBalance = () => getBalance(getPublicFromWallet(), uTxOuts);
 
 const sendTx = (address, amount) => {
-  const tx = createTx(address, amount, getPrivateFromWallet(), getUTxOutList());
-  addToMempool(tx, getUTxOutList())
+  const tx = createTx(
+    address,
+    amount,
+    getPrivateFromWallet(),
+    getUTxOutList(),
+    getMempool()
+  );
+  addToMempool(tx, getUTxOutList());
   return tx;
 };
 
