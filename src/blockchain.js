@@ -280,8 +280,13 @@ const sendTx = (address, amount) => {
     getMempool()
   );
   addToMempool(tx, getUTxOutList());
+  require("./p2p").broadcastMempool();
   return tx;
 };
+
+const handleIncomingTx = (tx) => {
+  addToMempool(tx, getUTxOutList());
+}
 
 module.exports = {
   getNewestBlock,
@@ -291,5 +296,6 @@ module.exports = {
   addBlockToChain,
   replaceChain,
   getAccountBalance,
-  sendTx
+  sendTx,
+  handleIncomingTx
 };
