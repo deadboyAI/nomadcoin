@@ -4,7 +4,8 @@ const express = require("express"),
   Blockchain = require("./blockchain"),
   P2P = require("./p2p"),
   Mempool = require("./mempool"),
-  Wallet = require("./wallet");
+  Wallet = require("./wallet"),  
+  _ = require("lodash");
 
 const { getBlockchain, createNewBlock, getAccountBalance, sendTx } = Blockchain;
 const { startP2PServer, connectToPeers } = P2P;
@@ -41,6 +42,16 @@ app.get("/me/balance", (req, res) => {
 
 app.get("/me/address", (req, res) => {
   res.send(getPublicFromWallet());
+});
+
+app.get("/blocks/:hash", (req, res) => {
+  const { params: { hash } } = req;
+  const block = _.find(getBlockchain(), { hash });
+  if (block === undefined) {
+    res.status(400).send("Block not found");
+  } else {
+    res.send(block);
+  }
 });
 
 app
